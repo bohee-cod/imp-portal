@@ -20,6 +20,10 @@ st.set_page_config(page_title="IMP 재무·세무 포털", page_icon="▣", layo
 # ------------------------------------------------------------------ 스타일
 st.markdown("""
 <style>
+/* Streamlit 기본 메뉴·툴바·배지 숨김 */
+#MainMenu, header[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"],
+[data-testid="stStatusWidget"], .stDeployButton, [data-testid="stAppDeployButton"], footer,
+[class*="viewerBadge"], [data-testid="manage-app-button"] { display:none !important; visibility:hidden !important; }
 html, body, [class*="css"], .stMarkdown, p, li, div { word-break: keep-all; overflow-wrap: break-word; }
 .block-container { padding-top: 2.2rem; max-width: 1240px; }
 h1, h2, h3 { letter-spacing: -0.01em; }
@@ -76,8 +80,6 @@ def check_login() -> bool:
                 st.rerun()
             else:
                 st.error("비밀번호가 맞지 않습니다.")
-        if not pw_set:
-            st.caption("관리자: Secrets에 password 값을 설정해야 로그인할 수 있습니다.")
     return False
 
 
@@ -337,7 +339,29 @@ def company():
     st.caption("출처: 회사 홈페이지 회사소개·연혁 (impav.com)")
 
 
+
+def guard():
+    """우클릭·F12·소스보기 단축키·드래그 선택 억제 (화면 내 표시만, 서버 코드는 원래 브라우저에 전달되지 않음)"""
+    components.html("""
+<script>
+(function(){
+  const docs=[document];
+  try{ if(window.parent && window.parent.document) docs.push(window.parent.document); }catch(e){}
+  docs.forEach(d=>{
+    if(d.__impGuard) return; d.__impGuard=true;
+    d.addEventListener('contextmenu',e=>e.preventDefault(),true);
+    d.addEventListener('keydown',e=>{
+      const k=(e.key||'').toLowerCase();
+      if(k==='f12' || (e.ctrlKey&&e.shiftKey&&['i','j','c'].includes(k)) || (e.ctrlKey&&['u','s'].includes(k))
+         || (e.metaKey&&e.altKey&&['i','j','c','u'].includes(k))){ e.preventDefault(); e.stopPropagation(); }
+    },true);
+  });
+})();
+</script>""", height=0)
+
+
 # ------------------------------------------------------------------ 라우팅
+guard()
 if not check_login():
     st.stop()
 
