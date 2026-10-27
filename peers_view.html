@@ -1,0 +1,234 @@
+<style>
+:root{--bg:#F4F6F8;--panel:#FFFFFF;--line:#E3E8EE;--grid:#EEF1F4;--ink:#16202A;--muted:#6B7785;--own:#4F46E5;
+--up:#D93025;--up-soft:#F6A29B;--down:#1F6FD1;--down-soft:#93C3F5;--neg:#D93025;--hl:#EEF0FF}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,sans-serif;word-break:keep-all;font-size:13px}
+.sec{margin:6px 0 30px}
+.sec-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 10px}
+.sec-h h2{margin:0;font-size:19px;font-weight:800}
+.sec-h span{color:var(--muted);font-size:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+@media (max-width:900px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--panel);min-width:0;padding:8px 6px 4px;cursor:zoom-in;position:relative}
+.card h3{margin:0 0 2px 4px;font-size:13px;font-weight:700}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;justify-content:center;margin:6px 0 2px}
+.lg{display:flex;align-items:center;gap:6px;font-size:12px;color:#3D4752;cursor:pointer;user-select:none}
+.lg i{display:inline-block;width:18px;height:3px;border-radius:2px}
+.lg.dim{opacity:.35}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.note{color:var(--muted);font-size:11.5px;line-height:1.7;margin:-14px 0 26px}
+.tip{position:fixed;pointer-events:none;background:#16202A;color:#fff;font-size:12px;padding:6px 9px;border-radius:5px;line-height:1.5;z-index:50;display:none;white-space:nowrap}
+table{width:100%;border-collapse:collapse;background:var(--panel);font-variant-numeric:tabular-nums}
+.tbl{border:1px solid var(--line);border-radius:10px;overflow:auto}
+th,td{padding:12px 14px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{font-size:13px;font-weight:700;vertical-align:bottom}
+thead th small{display:block;font-size:10.5px;color:var(--muted);font-weight:500;margin-top:2px}
+th.own,td.own{background:var(--hl)}
+thead th.own{color:var(--own)}
+tr.grp td{background:#F7F9FB;color:var(--muted);font-weight:700;font-size:12px;padding:9px 14px}
+td.k{font-weight:700}
+.neg{color:var(--neg)}
+.up{color:var(--up);font-weight:700}.down{color:var(--down);font-weight:700}
+.na{color:#B3BCC6}
+.points{background:#FFF7EC;border:1px solid #F1C48A;border-radius:10px;padding:12px 16px;margin:0 0 26px}
+.points b.t{display:block;color:#B56200;margin-bottom:4px;font-size:13.5px}
+.points ol{margin:0;padding-left:18px;line-height:1.75}
+.modal{position:fixed;inset:0;background:rgba(15,20,26,.55);display:none;align-items:center;justify-content:center;z-index:40;padding:20px}
+.modal.on{display:flex}
+.modal .box{background:#fff;border-radius:10px;width:min(1100px,100%);max-height:100%;overflow:auto;padding:14px 18px;position:relative}
+.modal .x{position:absolute;right:10px;top:8px;border:none;background:none;font-size:22px;cursor:pointer;color:#6B7785}
+</style>
+
+<div class="points" id="points"></div>
+
+<div class="sec">
+  <div class="sec-h"><h2>연도별 추이</h2><span>단위 억원 · 각 사 손익계산서 · 적자 빨간 점 · 그래프 더블클릭 = 크게 보기</span></div>
+  <div class="grid2">
+    <div class="card" data-chart="rev"><h3>매출액</h3><div class="legend"></div><div class="plot"></div></div>
+    <div class="card" data-chart="op"><h3>영업이익</h3><div class="legend"></div><div class="plot"></div></div>
+  </div>
+</div>
+<p class="note">· 인터엠은 9월 결산(해당 연도 = 전년 10월~당해 9월) · 아이엠피는 2023년까지 확보 · 점에 마우스를 올리면 그 회사 선이 강조 · 점이나 범례를 클릭하면 그 회사 선만 진하게(다시 클릭하면 해제) · 더블클릭하면 크게 보기(Esc·✕·바깥 클릭으로 닫기)</p>
+
+<div class="sec">
+  <div class="sec-h"><h2>전년 대비 변화</h2><span id="chgSub"></span></div>
+  <div class="grid2">
+    <div class="card" data-chart="growth"><h3>매출 성장률</h3><div class="plot"></div></div>
+    <div class="card" data-chart="opchg"><h3>영업이익 증감액</h3><div class="plot"></div></div>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec-h"><h2>재무 비교</h2><span>단위 억원 · 비율 % · 각 사 최근 확보 연도 · 적자 빨강 · 증감 상승 빨강/하락 파랑</span></div>
+  <div class="tbl"><table id="tbl"></table></div>
+</div>
+
+<div class="tip" id="tip"></div>
+<div class="modal" id="modal"><div class="box"><button class="x" id="mx" aria-label="닫기">✕</button><h3 id="mt" style="margin:0 0 6px"></h3><div class="legend" id="ml"></div><div id="mp"></div></div></div>
+
+<script>
+const P = /*PEERS*/;
+const OWN = 'imp';
+const COLORS = {imp:'#4F46E5', interm:'#F59E0B', dk:'#10B981', pascom:'#9CA3AF'};
+const cos = P.companies.filter(c => Object.keys(c.years).length);
+const years = [...new Set(cos.flatMap(c => Object.keys(c.years)))].sort();
+let focus = null;   // 클릭 강조 회사
+let hover = null;   // 마우스 강조 회사
+const tip = document.getElementById('tip');
+
+const fmt = (v, d=1) => v==null||isNaN(v) ? '–' : v.toLocaleString('ko-KR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const val = (c, y, i) => c.years[y] ? c.years[y][i] : null;
+function latest(c){ const ys = Object.keys(c.years).sort(); return ys[ys.length-1]; }
+function prevY(c){ const ys = Object.keys(c.years).sort(); return ys[ys.length-2]; }
+
+function niceTicks(min, max, n=5){
+  const span = max-min || 1; const step0 = span/n; const mag = Math.pow(10, Math.floor(Math.log10(step0)));
+  const step = [1,2,2.5,5,10].map(m=>m*mag).find(s=>span/s<=n) || 10*mag;
+  const lo = Math.floor(min/step)*step, hi = Math.ceil(max/step)*step; const out=[];
+  for(let v=lo; v<=hi+1e-9; v+=step) out.push(+v.toFixed(6)); return out;
+}
+
+function showTip(e, html){ tip.innerHTML = html; tip.style.display='block';
+  const x = Math.min(e.clientX+12, innerWidth - tip.offsetWidth - 8); tip.style.left = x+'px'; tip.style.top = (e.clientY+12)+'px'; }
+function hideTip(){ tip.style.display='none'; }
+
+function legend(el){
+  el.innerHTML = cos.map(c => `<span class="lg ${focus && focus!==c.key ? 'dim':''}" data-k="${c.key}"><i style="background:${COLORS[c.key]}"></i>${c.name}</span>`).join('');
+  el.querySelectorAll('.lg').forEach(s => s.onclick = e => { e.stopPropagation(); focus = focus===s.dataset.k ? null : s.dataset.k; renderAll(); });
+}
+
+function lineChart(host, idx, big){
+  const W = big ? 1040 : 540, H = big ? 420 : 250, L = 46, R = 46, T = 14, B = 30;
+  const vals = cos.flatMap(c => years.map(y => val(c,y,idx)).filter(v => v!=null));
+  const ticks = niceTicks(Math.min(0, ...vals), Math.max(...vals));
+  const y0 = ticks[0], y1 = ticks[ticks.length-1];
+  const X = i => L + (W-L-R) * (years.length===1 ? .5 : i/(years.length-1));
+  const Y = v => T + (H-T-B) * (1 - (v-y0)/(y1-y0));
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${idx===0?'매출액':'영업이익'} 연도별 추이">`;
+  ticks.forEach(t => { s += `<line x1="${L}" x2="${W-R}" y1="${Y(t)}" y2="${Y(t)}" stroke="${t===0?'#C9D1DA':'var(--grid)'}" stroke-width="1"/>`
+    + `<text x="${L-8}" y="${Y(t)+4}" text-anchor="end" font-size="11" fill="#6B7785">${t.toLocaleString('ko-KR')}</text>`; });
+  years.forEach((y,i) => s += `<text x="${X(i)}" y="${H-8}" text-anchor="middle" font-size="11.5" fill="#6B7785">${y}</text>`);
+  const order = [...cos].sort((a,b) => (a.key===OWN) - (b.key===OWN));
+  order.forEach(c => {
+    const act = focus || hover; const on = !act || act===c.key; const own = c.key===OWN;
+    const pts = years.map((y,i) => [i, val(c,y,idx)]).filter(p => p[1]!=null);
+    const op = on ? 1 : .18; const sw = own ? 3.5 : (act===c.key ? 3 : 2);
+    s += `<polyline fill="none" stroke="${COLORS[c.key]}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round" opacity="${own||act===c.key?op:op*.75}" points="${pts.map(p=>X(p[0])+','+Y(p[1])).join(' ')}"/>`;
+    pts.forEach(p => { const neg = p[1] < 0; const r = own ? 5 : 3.6;
+      s += `<circle class="pt" data-k="${c.key}" data-y="${years[p[0]]}" data-v="${p[1]}" cx="${X(p[0])}" cy="${Y(p[1])}" r="${r}" fill="${neg?'var(--neg)':COLORS[c.key]}" stroke="#fff" stroke-width="${own?2:1}" opacity="${op}"/>`
+        + `<circle class="hit" data-k="${c.key}" data-y="${years[p[0]]}" data-v="${p[1]}" cx="${X(p[0])}" cy="${Y(p[1])}" r="11" fill="transparent"/>`; });
+    if (own && pts.length) { const lp = pts[pts.length-1];
+      s += `<text x="${X(lp[0])}" y="${Y(lp[1])-12}" text-anchor="middle" font-size="13" font-weight="800" fill="${COLORS[c.key]}">${fmt(lp[1],0)}억</text>`; }
+  });
+  s += '</svg>';
+  host.innerHTML = s;
+  host.querySelectorAll('.hit').forEach(h => {
+    const c = cos.find(x => x.key===h.dataset.k);
+    h.onmouseenter = e => { if(!focus){ hover = h.dataset.k; redrawLines(); } };
+    h.onmousemove = e => { const y=h.dataset.y, v=+h.dataset.v; const pv = c.years[String(+y-1)];
+      const chg = pv ? (idx===0 ? (pv[0] ? ((v/pv[0]-1)*100) : null) : v - pv[1]) : null;
+      showTip(e, `<b>${c.name}</b> · ${y}${c.key==='interm'?' (9월 결산)':''}<br>${idx===0?'매출액':'영업이익'} <b>${fmt(v)}억</b>`
+        + (chg==null?'':`<br>전년比 ${idx===0? (chg>=0?'▲ ':'▼ ')+fmt(Math.abs(chg))+'%' : (chg>=0?'+':'')+fmt(chg)+'억'}`)); };
+    h.onmouseleave = () => { hideTip(); if(!focus){ hover = null; redrawLines(); } };
+    h.onclick = e => { e.stopPropagation(); focus = focus===h.dataset.k ? null : h.dataset.k; hover=null; renderAll(); };
+  });
+}
+
+function barChart(host, rows, unit, big){
+  const W = big ? 1040 : 540, rowH = big ? 38 : 30, LBL = 84, T = 6, B = 26, R = 70;
+  const H = T + rows.length*rowH + B;
+  const vals = rows.map(r => r.v);
+  const lo = Math.min(0, ...vals), hi = Math.max(0, ...vals), span = (hi-lo)||1;
+  const ticks = niceTicks(lo<0 ? lo - span*.35 : lo, hi>0 ? hi + span*.12 : hi, 4);
+  const x0 = ticks[0], x1 = ticks[ticks.length-1];
+  const X = v => LBL + 10 + (W-LBL-10-R) * (v-x0)/(x1-x0);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img">`;
+  ticks.forEach(t => s += `<line x1="${X(t)}" x2="${X(t)}" y1="${T}" y2="${H-B}" stroke="${t===0?'#AEB8C3':'var(--grid)'}"/>`
+    + `<text x="${X(t)}" y="${H-8}" text-anchor="middle" font-size="11" fill="#6B7785">${t.toLocaleString('ko-KR')}${unit}</text>`);
+  rows.forEach((r,i) => { const y = T + i*rowH + rowH*.18, h = rowH*.64, own = r.key===OWN;
+    const fill = r.v>=0 ? (own?'var(--up)':'var(--up-soft)') : (own?'var(--down)':'var(--down-soft)');
+    const a = X(Math.min(0,r.v)), w = Math.abs(X(r.v)-X(0));
+    s += `<text x="${LBL}" y="${y+h*.72}" text-anchor="end" font-size="12.5" font-weight="${own?800:500}" fill="${own?'var(--own)':'#3D4752'}">${r.name}</text>`
+      + `<rect x="${a}" y="${y}" width="${Math.max(w,1.5)}" height="${h}" rx="3" fill="${fill}" class="bar" data-i="${i}"/>`
+      + `<text x="${r.v>=0 ? X(r.v)+6 : X(r.v)-6}" y="${y+h*.72}" text-anchor="${r.v>=0?'start':'end'}" font-size="12" font-weight="700" fill="${r.v>=0?'#16202A':'#16202A'}">${r.v>=0?'+':''}${fmt(r.v)}${unit}</text>`; });
+  s += '</svg>';
+  host.innerHTML = s;
+  host.querySelectorAll('.bar').forEach(b => { const r = rows[+b.dataset.i];
+    b.onmousemove = e => showTip(e, `<b>${r.name}</b> · ${r.span}<br>${r.detail}`); b.onmouseleave = hideTip; });
+}
+
+function chgRows(){
+  return cos.filter(c => prevY(c)).map(c => { const y = latest(c), p = prevY(c);
+    const [r1,o1] = c.years[y], [r0,o0] = c.years[p];
+    return {key:c.key, name:c.name, span:`${p} → ${y}`, g:(r1/r0-1)*100, d:o1-o0, r0, r1, o0, o1}; });
+}
+
+const VIEWS = {
+  rev:   {title:'매출액 추이 (억원)', draw:(h,big)=>lineChart(h,0,big), legend:true},
+  op:    {title:'영업이익 추이 (억원)', draw:(h,big)=>lineChart(h,1,big), legend:true},
+  growth:{title:'매출 성장률 (전년 대비)', draw:(h,big)=>barChart(h, chgRows().map(r=>({...r, v:r.g, detail:`매출 ${fmt(r.r0)}억 → ${fmt(r.r1)}억`})).sort((a,b)=>b.v-a.v), '%', big)},
+  opchg: {title:'영업이익 증감액 (전년 대비)', draw:(h,big)=>barChart(h, chgRows().map(r=>({...r, v:r.d, detail:`영업이익 ${fmt(r.o0)}억 → ${fmt(r.o1)}억`})).sort((a,b)=>b.v-a.v), '억', big)},
+};
+let modalKey = null;
+
+function redrawLines(){
+  document.querySelectorAll('.card[data-chart="rev"] .plot, .card[data-chart="op"] .plot').forEach(p => VIEWS[p.parentElement.dataset.chart].draw(p,false));
+  if (modalKey && VIEWS[modalKey].legend) VIEWS[modalKey].draw(document.getElementById('mp'), true);
+}
+function renderAll(){
+  document.querySelectorAll('.card').forEach(card => { const k = card.dataset.chart;
+    const lg = card.querySelector('.legend'); if (lg) legend(lg);
+    VIEWS[k].draw(card.querySelector('.plot'), false); });
+  if (modalKey) openModal(modalKey);
+}
+function openModal(k){
+  modalKey = k; const m = document.getElementById('modal'); m.classList.add('on');
+  document.getElementById('mt').textContent = VIEWS[k].title;
+  const ml = document.getElementById('ml'); if (VIEWS[k].legend) legend(ml); else ml.innerHTML='';
+  VIEWS[k].draw(document.getElementById('mp'), true);
+}
+function closeModal(){ modalKey=null; document.getElementById('modal').classList.remove('on'); hideTip(); }
+document.querySelectorAll('.card').forEach(c => c.addEventListener('dblclick', () => { focus=null; hover=null; openModal(c.dataset.chart); renderAll(); }));
+document.getElementById('mx').onclick = closeModal;
+document.getElementById('modal').onclick = e => { if (e.target.id==='modal') closeModal(); };
+document.addEventListener('keydown', e => { if (e.key==='Escape') closeModal(); });
+
+// 변화 부제
+(function(){ const own = cos.find(c=>c.key===OWN);
+  document.getElementById('chgSub').textContent = `각 사 최근 2개 연도 (아이엠피 ${prevY(own)}→${latest(own)}, 그 외 2024→2025) · 증가 빨강 / 감소 파랑 · 영업이익은 적자 회사가 있어 증감률 대신 증감액 · 그래프 더블클릭 = 크게 보기`; })();
+
+// 한눈에 보기
+document.getElementById('points').innerHTML = '<b class="t">한눈에 보기</b><ol>' + P.points.map(p=>`<li>${p}</li>`).join('') + '</ol>';
+
+// 재무 비교 표
+(function(){
+  const all = P.companies;
+  const col = c => { const y = latest(c); const p = prevY(c); return {c, y, p, v: y ? c.years[y] : null, pv: p ? c.years[p] : null}; };
+  const cols = all.map(col);
+  const cell = (x, f, cls='') => `<td class="${x.c.key===OWN?'own':''} ${cls}">${f}</td>`;
+  const num = v => v==null ? '<span class="na">–</span>' : `<span class="${v<0?'neg':''}">${fmt(v)}</span>`;
+  const pct = v => v==null||!isFinite(v) ? '<span class="na">–</span>' : `<span class="${v<0?'neg':''}">${fmt(v)}%</span>`;
+  const chg = v => v==null||!isFinite(v) ? '<span class="na">–</span>' : `<span class="${v>0?'up':v<0?'down':''}">${v>0?'▲':'▼'} ${fmt(Math.abs(v))}%</span>`;
+  let h = '<thead><tr><th>구분</th>' + cols.map(x => `<th class="${x.c.key===OWN?'own':''}">${x.c.name}<small>${x.y ? (x.c.key==='interm'?'FY'+x.y+' (9월)':x.y) : '자료 없음'}</small></th>`).join('') + '</tr></thead><tbody>';
+  const grp = t => `<tr class="grp"><td colspan="${cols.length+1}">${t}</td></tr>`;
+  const row = (k, f) => `<tr><td class="k">${k}</td>` + cols.map(x => cell(x, x.v ? f(x) : (k==='매출액' && x.c.key==='pascom' ? '약 30~40' : '<span class="na">–</span>'))).join('') + '</tr>';
+  h += grp('손익 (억원)');
+  h += row('매출액', x => num(x.v[0]));
+  h += row('영업이익', x => num(x.v[1]));
+  h += row('당기순이익', x => num(x.v[2]));
+  h += grp('수익성·성장 (%)');
+  h += row('영업이익률', x => pct(x.v[1]/x.v[0]*100));
+  h += row('순이익률', x => pct(x.v[2]/x.v[0]*100));
+  h += row('매출 증감률', x => x.pv ? chg((x.v[0]/x.pv[0]-1)*100) : '<span class="na">–</span>');
+  h += row('영업이익 증감', x => { if(!x.pv) return '<span class="na">–</span>'; const d = x.v[1]-x.pv[1];
+      return `<span class="${d>0?'up':d<0?'down':''}">${d>0?'+':''}${fmt(d)}억</span>`; });
+  h += grp('규모');
+  h += `<tr><td class="k">인원</td>` + cols.map(x => cell(x, x.c.employees ? x.c.employees+'명' : '<span class="na">–</span>')).join('') + '</tr>';
+  h += row('1인당 매출(억원)', x => x.c.employees ? num(x.v[0]/x.c.employees) : '<span class="na">–</span>');
+  h += '</tbody>';
+  document.getElementById('tbl').innerHTML = h;
+})();
+
+renderAll();
+</script>
